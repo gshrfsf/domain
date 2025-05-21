@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>네온 투두 리스트</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background-color: #000000;
+      color: #fff;
+      margin: 0;
+      padding: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background: radial-gradient(#0f0f0f, #000000);
+    }
+
+    .container {
+      background: rgba(20, 20, 20, 0.9);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px #0ff, 0 0 60px #0ff;
+      width: 100%;
+      max-width: 600px;
+      animation: fadeIn 1s ease-out;
+    }
+
+    h1 {
+      text-align: center;
+      color: #0ff;
+      text-shadow: 0 0 10px #0ff;
+      margin-bottom: 30px;
+      font-size: 2rem;
+    }
+
+    form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      background-color: #000;
+      border: 2px solid #0ff;
+      color: #0ff;
+      border-radius: 10px;
+      font-size: 16px;
+      outline: none;
+      transition: box-shadow 0.3s;
+    }
+
+    input[type="text"]:focus {
+      box-shadow: 0 0 10px #0ff;
+    }
+
+    button {
+      background-color: #0ff;
+      border: none;
+      color: #000;
+      font-weight: bold;
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    button:hover {
+      background-color: #00cccc;
+      box-shadow: 0 0 10px #00ffff;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      background-color: rgba(0, 255, 255, 0.05);
+      border: 1px solid #0ff;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      color: #0ff;
+      box-shadow: 0 0 10px #0ff;
+      animation: slideIn 0.5s ease forwards;
+    }
+
+    .todo-item.completed {
+      background-color: rgba(0, 255, 150, 0.1);
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+
+    .todo-item input[type="checkbox"] {
+      margin-right: 12px;
+      transform: scale(1.2);
+    }
+
+    .todo-content {
+      flex-grow: 1;
+    }
+
+    .timestamp {
+      font-size: 0.75em;
+      color: #88ffff;
+      margin-top: 4px;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: #ff4b4b;
+      font-size: 1.2em;
+      cursor: pointer;
+      margin-left: 10px;
+      transition: transform 0.2s;
+    }
+
+    .delete-btn:hover {
+      color: #ff0000;
+      transform: scale(1.2);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚡ 네온 투두 리스트</h1>
+    <form id="todoForm">
+      <input type="text" id="todoInput" placeholder="할 일 입력 (삭제폭탄 입력 시 전체 삭제)" required />
+      <button type="submit">➕</button>
+    </form>
+    <ul id="todoList"></ul>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'todoItems';
+    const SECRET_CODE = '삭제폭탄';
+
+    const form = document.getElementById('todoForm');
+    const input = document.getElementById('todoInput');
+    const list = document.getElementById('todoList');
+
+    function loadTodos() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    }
+
+    function saveTodos(todos) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    }
+
+    function renderTodos() {
+      list.innerHTML = '';
+      const todos = loadTodos();
+      todos.forEach((todo, index) => {
+        const li = document.createElement('li');
+        li.className = 'todo-item' + (todo.completed ? ' completed' : '');
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = todo.completed;
+        checkbox.addEventListener('change', () => {
+          todo.completed = checkbox.checked;
+          saveTodos(todos);
+          renderTodos();
+        });
+
+        const content = document.createElement('div');
+        content.className = 'todo-content';
+        content.innerHTML = `<strong>${todo.text}</strong><div class="timestamp">${todo.timestamp}</div>`;
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.innerHTML = '🗑';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.title = '삭제';
+        deleteBtn.addEventListener('click', () => {
+          todos.splice(index, 1);
+          saveTodos(todos);
+          renderTodos();
+        });
+
+        li.appendChild(checkbox);
+        li.appendChild(content);
+        li.appendChild(deleteBtn);
+        list.appendChild(li);
+      });
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+
+      // 비밀코드 처리
+      if (text === SECRET_CODE) {
+        localStorage.removeItem(STORAGE_KEY);
+        alert('💥 삭제폭탄 발동! 모든 할 일이 사라졌습니다!');
+        input.value = '';
+        renderTodos();
+        return;
+      }
+
+      const todos = loadTodos();
+      const now = new Date();
+      todos.unshift({
+        text: text,
+        timestamp: now.toLocaleString(),
+        completed: false
+      });
+      saveTodos(todos);
+      input.value = '';
+      renderTodos();
+    });
+
+    renderTodos();
+  </script>
+</body>
+</html>
